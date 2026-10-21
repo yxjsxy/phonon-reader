@@ -1,0 +1,20 @@
+{
+  "name": "phonon-reader",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5173 --strictPort",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 4173 --strictPort",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test test/text.test.ts"
+  },
+  "dependencies": {
+    "phonon-tts": "0.4.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vite": "^6.3.5"
+  }
+}
