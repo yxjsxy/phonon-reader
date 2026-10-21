@@ -215,5 +215,5 @@ footer {
 @media (max-width: 680px) {
   .file { grid-template-columns: 1fr; }
   label.voice { margin-left: 0; width: 100%; }
-  select { width: 100%; }
+  select { width: 100%; min-width: 0; }
 }

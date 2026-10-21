@@ -77,6 +77,9 @@ voiceSelect.addEventListener('change', () => {
   });
 });
 
+let latestFiles: FileProgress[] = [];
+let progressDone = false;
+
 renderPassage(null);
 void boot();
 
@@ -88,6 +91,8 @@ async function boot(): Promise<void> {
       onState: (state) => setPlayback(state),
       onError: (message) => setStatus('error', message),
     });
+    progressDone = true;
+    renderProgress(latestFiles);
     const notice = deviceNotice(model);
     const thread =
       model.device === 'cpu'
@@ -178,7 +183,7 @@ async function ensureSelectedVoice(): Promise<string | undefined> {
     await job;
     playButton.disabled = playback !== 'idle';
     if (playback === 'idle') {
-      setStatus('ok', `${voice.name} is ready. It was downloaded only after you selected it.`);
+      setStatus('ok', `${voice.name} is ready.`);
     }
     return voice.name;
   } catch (error) {
@@ -225,8 +230,9 @@ function renderPassage(index: number | null): void {
 }
 
 function renderProgress(files: FileProgress[]): void {
+  latestFiles = files;
   filesEl.replaceChildren();
-  for (const file of files) {
+  files.forEach((file, index) => {
     const row = document.createElement('div');
     row.className = 'file';
     const name = document.createElement('span');
@@ -234,18 +240,27 @@ function renderProgress(files: FileProgress[]): void {
     const bar = document.createElement('div');
     bar.className = 'bar';
     bar.setAttribute('role', 'progressbar');
+    const finished =
+      progressDone ||
+      file.cached ||
+      index < files.length - 1 ||
+      (file.total !== null && file.loaded >= file.total);
+    const ratio = finished ? 1 : file.total ? Math.min(1, file.loaded / file.total) : 0.12;
     const fill = document.createElement('span');
-    const ratio = file.cached ? 1 : file.total ? Math.min(1, file.loaded / file.total) : 0.08;
     fill.style.width = `${Math.round(ratio * 100)}%`;
     bar.append(fill);
     bar.setAttribute('aria-valuenow', String(Math.round(ratio * 100)));
     const detail = document.createElement('span');
-    detail.textContent = file.cached ? 'Cached' : file.total ? `${formatBytes(file.loaded)} / ${formatBytes(file.total)}` : formatBytes(file.loaded);
+    detail.textContent = file.cached
+      ? 'Cached'
+      : file.total
+        ? `${formatBytes(file.loaded)} / ${formatBytes(file.total)}`
+        : formatBytes(file.loaded);
     row.append(name, bar, detail);
     filesEl.append(row);
-  }
+  });
   const current = files[files.length - 1];
-  if (current) {
+  if (current && !progressDone) {
     statusText.textContent = current.cached
       ? `${current.label} loaded from the browser cache.`
       : `Downloading ${current.label.toLowerCase()}…`;

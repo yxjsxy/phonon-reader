@@ -10,6 +10,38 @@ const NAV_AND_SCRIPTS = [
   '[role="navigation"]',
 ].join(', ');
 
+const BLOCKS = new Set([
+  'address',
+  'article',
+  'aside',
+  'blockquote',
+  'body',
+  'caption',
+  'dd',
+  'div',
+  'dl',
+  'dt',
+  'figcaption',
+  'figure',
+  'footer',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'header',
+  'li',
+  'main',
+  'ol',
+  'p',
+  'pre',
+  'section',
+  'table',
+  'tr',
+  'ul',
+]);
+
 const ABBREVIATIONS = new Set([
   'mr',
   'mrs',
@@ -58,9 +90,22 @@ export function extractReadableText(input: string): string {
 
   const doc = new DOMParser().parseFromString(source, 'text/html');
   doc.querySelectorAll(NAV_AND_SCRIPTS).forEach((node) => node.remove());
-  const body = doc.body;
-  const text = body?.innerText ?? body?.textContent ?? '';
+  // A document from DOMParser is not laid out, so innerText would glue
+  // neighbouring blocks together. Walk the tree and break on blocks instead.
+  const text = doc.body ? blockText(doc.body) : '';
   return normalizeWhitespace(text);
+}
+
+function blockText(node: Node): string {
+  if (node.nodeType === Node.TEXT_NODE) return node.textContent ?? '';
+  if (!(node instanceof Element)) return '';
+
+  const name = node.tagName.toLowerCase();
+  if (name === 'br' || name === 'hr') return '\n';
+
+  let text = '';
+  for (const child of node.childNodes) text += blockText(child);
+  return BLOCKS.has(name) ? `\n${text}\n` : text;
 }
 
 /**
